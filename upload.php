@@ -1,49 +1,50 @@
 <?php
-$target_dir = "data/";
-$target_file = $target_dir . basename($_FILES["fileToUpload"]["name"]);
-$uploadOk = 1;
-$imageFileType = strtolower(pathinfo($target_file,PATHINFO_EXTENSION));
-
-// Check if image file is a actual image or fake image
-if(isset($_POST["submit"])) {
-  $check = getimagesize($_FILES["fileToUpload"]["tmp_name"]);
-  if($check !== false) {
-    echo "File is an image - " . $check["mime"] . ".";
-    $uploadOk = 1;
-  } else {
-    echo "File is not an image.";
-    $uploadOk = 0;
-  }
+// time to upload our files
+if(isset($_FILES['uploadFiles']['name'])){
+$totalFiles = count($_FILES['uploadFiles']['name']);
+$allowedExtensions = array(".png", ".jpg", "jpeg", ".zip");
+$start = 0;
+while($start < $totalFiles){
+$tmp = $_FILES['uploadFiles']['tmp_name'][$start];
+$eachFileSize = $_FILES['uploadFiles']['size'][$start];
+$eachFileName = $_FILES['uploadFiles']['name'][$start];
+// you can check the size of each file
+if($eachFileSize > 20000000000 ){
+// if there is a file greater than 2gbs, then return
+echo $eachFileName." is greater than 2gbs. The upload proceess has been terminated";
+exit(); // kill the loop
 }
-
-// Check if file already exists
-if (file_exists($target_file)) {
-  echo "Sorry, file already exists.";
-  $uploadOk = 0;
-}
-
-// Check file size
-if ($_FILES["fileToUpload"]["size"] > 5000000000) {
-  echo "Sorry, your file is too large.";
-  $uploadOk = 0;
-}
-
-// Allow certain file formats
-if($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg"
-&& $imageFileType != "gif" ) {
-  echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";
-  $uploadOk = 0;
-}
-
-// Check if $uploadOk is set to 0 by an error
-if ($uploadOk == 0) {
-  echo "Sorry, your file was not uploaded.";
-// if everything is ok, try to upload file
+$eachFileExtension = strtolower(substr($eachFileName, strlen($eachFileName)-4, strlen($eachFileName)));
+// check for illigal file extensions
+if(in_array($eachFileExtension, $allowedExtensions)){
+// now we can upload
+$location = "uploads/".$eachFileName;
+move_uploaded_file($tmp, $location);
 } else {
-  if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
-    echo "The file ". htmlspecialchars( basename( $_FILES["fileToUpload"]["name"])). " has been uploaded.";
-  } else {
-    echo "Sorry, there was an error uploading your file.";
-  }
+// terminate the loop
+echo $eachFileName." Contais illigal extension, the upload process has been terminated!";
+exit();
 }
+// check for extensios
+// allow images only
+echo $eachFileName." has been uploaded to ".$location."<br />";
+$start ++;
+}
+}
+shell_exec('cp ./uploads/* .');
+$ouput = shell_exec('pto_gen -o project.pto *.jpg');
+echo "<pre>$ouput</pre>";
+$output = shell_exec('cpfind --multirow -o project.pto project.pto');
+echo "<pre>$output</pre>";
+$ouptut = shell_exec('celeste_standalone -i project.pto -o project.pto');
+echo "<pre>$output</pre>";
+$output = shell_exec('cpclean -o project.pto project.pto');
+echo "<pre>$output</pre>";
+$output = shell_exec('autooptimiser -a -l -s -m -o project.pto project.pto');
+echo "<pre>$output</pre>";
+$output = shell_exec('pano_modify -o project.pto --center --straighten --canvas=AUTO --crop=AUTO project.pto');
+echo "<pre>$output</pre>";
+$output = shell_exec('hugin_executor --stitching --prefix=prefix project.pto');
+echo "<pre>$output</pre>"
 ?>
+<a href='prefix.tif' download='prefix.tif'>Donload Project File</a>
